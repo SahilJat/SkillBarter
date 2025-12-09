@@ -1,0 +1,71 @@
+// server/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. THE USER
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  credits   Int      @default(3)
+  createdAt DateTime @default(now())
+
+  // Relationships
+  skills    Skill[]
+  
+  bookingsAsBuyer  Booking[] @relation("BuyerRelation")
+  bookingsAsSeller Booking[] @relation("SellerRelation")
+
+  sentMessages     Message[] @relation("SenderRelation")
+  receivedMessages Message[] @relation("ReceiverRelation")
+}
+
+// 2. THE SKILL
+model Skill {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  category    String
+  
+  ownerId     Int
+  owner       User     @relation(fields: [ownerId], references: [id])
+
+  bookings    Booking[]
+}
+
+// 3. THE BOOKING
+model Booking {
+  id        Int      @id @default(autoincrement())
+  status    String   @default("PENDING") 
+  date      DateTime
+
+  buyerId   Int
+  buyer     User     @relation("BuyerRelation", fields: [buyerId], references: [id])
+
+  sellerId  Int
+  seller    User     @relation("SellerRelation", fields: [sellerId], references: [id])
+
+  skillId   Int
+  skill     Skill    @relation(fields: [skillId], references: [id])
+}
+
+// 4. THE CHAT
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  timestamp  DateTime @default(now())
+
+  senderId   Int
+  sender     User     @relation("SenderRelation", fields: [senderId], references: [id])
+
+  receiverId Int
+  receiver   User     @relation("ReceiverRelation", fields: [receiverId], references: [id])
+}

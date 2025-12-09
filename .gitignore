@@ -1,0 +1,20 @@
+# Dependency directories
+node_modules/
+
+# Environment variables 
+.env
+
+# Docker Database Data
+postgres_data/
+
+# Build outputs
+dist/
+build/
+
+# Logs
+npm-debug.log
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
