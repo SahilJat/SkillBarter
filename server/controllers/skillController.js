@@ -29,7 +29,7 @@ const getAllSkills = async (req, res) => {
       where: category ? { category: category } : {},
       include: {
         owner: {
-          select: { name: true, email: true }
+          select: { id: true, name: true, email: true }
         }
       },
       orderBy: { id: 'desc' }

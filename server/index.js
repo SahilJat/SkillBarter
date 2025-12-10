@@ -1,56 +1,76 @@
+// server/index.js
 require('dotenv').config();
-const express = require("express");
-const cors = require('cors');
+const express = require('express');
+const cors = require('cors'); // <--- 1. Import CORS
 const { createServer } = require('http');
-const { Server } = require('socket.io')
-const skillRoutes = require('./routes/skillRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-const prisma = require('./prismaClient');
+const { Server } = require('socket.io');
+const prisma = require('./prismaClient'); // <--- 2. Import Shared Prisma
+
 const app = express();
+
+// --- 3. CORS MUST BE HERE (BEFORE EVERYTHING) ---
+app.use(cors()); // Allow ALL requests from ANYWHERE (Fixes the blocking error)
+
+// --- 4. JSON PARSER ---
+app.use(express.json());
+
 const httpServer = createServer(app);
 
+// --- 5. SOCKET IO SETUP ---
 const io = new Server(httpServer, {
-  cors: { origin: "http://localhost:5173" }
+  cors: { origin: "*" } // Allow Socket connections from anywhere
 });
 
-const PORT = process.env.PORT || 5000;
-app.use(cors());
-app.use(express.json());
+// --- 6. ROUTES ---
 const authRoutes = require('./routes/authRoutes');
+const skillRoutes = require('./routes/skillRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+
 app.use('/auth', authRoutes);
 app.use('/skills', skillRoutes);
 app.use('/bookings', bookingRoutes);
+app.use('/chat', chatRoutes);
+
+// --- 7. SOCKET LOGIC (Real-time) ---
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  console.log('User Connected:', socket.id);
+
   socket.on('join_room', (userId) => {
-    socket.join(userId.toString());
-    console.log(`User ${userId} joined their room`);
+    if (userId) socket.join(userId.toString());
   });
+
   socket.on('send_message', async (data) => {
     const { senderId, receiverId, content } = data;
 
+    // Safety: Ensure IDs are numbers
+    const sId = parseInt(senderId);
+    const rId = parseInt(receiverId);
+
+    if (isNaN(sId) || isNaN(rId)) return;
+
     try {
-      // A. Save to Database (Peristance)
+      // Save to DB
       const newMessage = await prisma.message.create({
         data: {
-          senderId,
-          receiverId,
-          content
+          content: content,
+          sender: { connect: { id: sId } },
+          receiver: { connect: { id: rId } }
         }
       });
-      io.to(receiverId.toString()).emit('receive_message', newMessage);
+
+      // Send to Receiver
+      io.to(rId.toString()).emit('receive_message', newMessage);
+      // Send back to Sender (so it shows on your screen too)
       socket.emit('receive_message', newMessage);
 
     } catch (err) {
-      console.error("Message Error:", err);
+      console.error("Message Save Error:", err);
     }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
   });
 });
 
+const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 SkillBarter Server running on Port ${PORT}`);
+  console.log(`🚀 Server running on Port ${PORT}`);
 });
