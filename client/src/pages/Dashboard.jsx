@@ -1,7 +1,7 @@
 // client/src/pages/Dashboard.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, PlusCircle, Coins } from 'lucide-react'; // Icons
+import { LogOut, PlusCircle, Coins } from 'lucide-react';
 
 function Dashboard() {
   const [skills, setSkills] = useState([]);
@@ -40,7 +40,6 @@ function Dashboard() {
     const data = await res.json();
     if (res.ok) {
       alert("Booking Confirmed! -1 Credit");
-      // Update local user credits visually
       const updatedUser = { ...user, credits: user.credits - 1 };
       setUser(updatedUser);
       localStorage.setItem('skill_user', JSON.stringify(updatedUser));
@@ -73,23 +72,40 @@ function Dashboard() {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {skills.map(skill => (
-          <div key={skill.id} className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-emerald-500/50 transition shadow-lg">
-            <div className="flex justify-between items-start mb-4">
-              <span className="bg-emerald-900/30 text-emerald-400 text-xs font-bold px-2 py-1 rounded uppercase">
-                {skill.category}
-              </span>
-              <span className="text-slate-400 text-sm">by {skill.owner.name}</span>
+          // FIX: Only ONE parent div here
+          <div key={skill.id} className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-emerald-500/50 transition shadow-lg flex flex-col justify-between">
+
+            {/* Top Content */}
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <span className="bg-emerald-900/30 text-emerald-400 text-xs font-bold px-2 py-1 rounded uppercase">
+                  {skill.category}
+                </span>
+                <span className="text-slate-400 text-sm">by {skill.owner.name}</span>
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-2">{skill.title}</h3>
+              <p className="text-slate-400 text-sm mb-6">{skill.description}</p>
             </div>
 
-            <h3 className="text-xl font-bold text-white mb-2">{skill.title}</h3>
-            <p className="text-slate-400 text-sm mb-6">{skill.description}</p>
+            {/* Bottom Buttons - Nested properly inside the card */}
+            <div className="flex gap-2 mt-auto">
+              <button
+                onClick={() => handleBook(skill.id)}
+                className="flex-1 bg-slate-700 hover:bg-emerald-600 hover:text-white text-slate-300 py-2 rounded-lg transition font-medium"
+              >
+                Book (1 Credit)
+              </button>
 
-            <button
-              onClick={() => handleBook(skill.id)}
-              className="w-full bg-slate-700 hover:bg-emerald-600 hover:text-white text-slate-300 py-2 rounded-lg transition font-medium"
-            >
-              Book Session (1 Credit)
-            </button>
+              <button
+                onClick={() => navigate('/chat', { state: { targetUser: skill.owner } })}
+                className="px-3 bg-slate-700 hover:bg-blue-600 text-white rounded-lg transition"
+                title="Message User"
+              >
+                💬
+              </button>
+            </div>
+
           </div>
         ))}
       </div>
